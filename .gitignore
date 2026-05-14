@@ -1,3 +1,17 @@
 **/.vs/
 **/__pycache__/
 *.pyc
+
+*.py[cod]
+*$py.class
+*.so
+
+env/
+venv/
+.env
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+.ipynb_checkpoints
