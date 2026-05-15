@@ -8,21 +8,21 @@ class agent:
         self.node_visted = 0
 
     # Hàm đánh giá
-    def evaluate(self, board, size):
+    def _evaluate(self, size):
         score = 0
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
         for x in range(size):
             for y in range(size):
-                if board[x][y] != '.':
-                    player = board[x][y]
+                if self.board[x][y] != '.':
+                    player = self.board[x][y]
                     for dx, dy in directions:
                         close = 0
                         count = 1
                         nx, ny = x -dx, y - dy
                         if 0 <= nx < size and 0 <= ny < size:
-                            if board[nx][ny] == player:
+                            if self.board[nx][ny] == player:
                                 continue
-                            if board[nx][ny] == '.':
+                            if self.board[nx][ny] == '.':
                                 pass
                             else:
                                 close += 1
@@ -30,9 +30,9 @@ class agent:
                         for d in range(1, 4):
                             nx, ny = x + d * dx, y + d * dy
                             if 0 <= nx < size and 0 <= ny < size:
-                                if board[nx][ny] == player:
+                                if self.board[nx][ny] == player:
                                     count += 1
-                                if board[nx][ny] == '.':
+                                if self.board[nx][ny] == '.':
                                     pass
                                 else:
                                     close += 1
@@ -43,7 +43,7 @@ class agent:
                         elif count == 3 and close == 1: point = 1000
                         elif count == 3 and close == 0: point = 4000 # Chuỗi 3 không bị chặn có giá trị cao hơn
                         elif count == 2 and close == 1: point = 100
-                        elif count == 2 and close == 0: point = 400 # Chuỗi 2 không bị chặn có giá trị cao hơn
+                        elif count == 2 and close == 0: point = 1000 # Chuỗi 2 không bị chặn có giá trị cao hơn
             
                         if player == self.ai_player: # Lượt máy
                             score += point
@@ -53,29 +53,29 @@ class agent:
         return score
 
     # Minimax lv 1
-    def minimax(self, game, depth, maximizing, x, y):
+    def _minimax(self, game, depth, maximizing, x, y):
         self.node_visted += 1
-        if game.check_win(x, y):
+        if game.check_win(x, y, self.board):
             return -(500000 + depth) if maximizing else 500000 + depth
-        if depth == 0 or game.is_draw():
-            return self.evaluate(game.board, game.size)
+        if depth == 0 or game.is_draw(self.board):
+            return self._evaluate(game.size)
 
         if maximizing:
             max_eval = -math.inf
-            for move in game.get_available_moves():
+            for move in game.get_available_moves(self.board):
                 x, y = move
-                game.test_move(x, y)
-                eval = self.minimax(game, depth - 1, False, x, y)
-                game.undo_move(x, y)
+                self._test_move(x, y)
+                eval = self._minimax(game, depth - 1, False, x, y)
+                self._undo_move(x, y)
                 max_eval = max(max_eval, eval)
             return max_eval
         else:
             min_eval = math.inf
-            for move in game.get_available_moves():
+            for move in game.get_available_moves(self.board):
                 x, y = move
-                game.test_move(x, y)
-                eval = self.minimax(game, depth - 1, True, x, y)
-                game.undo_move(x, y)
+                self._test_move(x, y)
+                eval = self._minimax(game, depth - 1, True, x, y)
+                self._undo_move(x, y)
                 min_eval = min(min_eval, eval)
             return min_eval
 
@@ -84,16 +84,18 @@ class agent:
         self.node_visted = 0
         start_time = time.time()
 
+        self.board = [row.copy() for row in game.board]
+        self.player = game.current_player 
         best_score = -math.inf
         move_to_make = None
         best_local = -math.inf
 
-        for move in game.get_available_moves():
+        for move in game.get_available_moves(self.board):
             x, y = move
-            game.test_move(x, y)
-            score = self.minimax(game, self.depth - 1, False, x, y)
-            local = self.evaluate(game.board, game.size)
-            game.undo_move(x, y)
+            self._test_move(x, y)
+            score = self._minimax(game, self.depth - 1, False, x, y)
+            local = self._evaluate(game.size)
+            self._undo_move(x, y)
             if score > best_score:
                 best_score = score
                 move_to_make = (x, y)
@@ -101,3 +103,11 @@ class agent:
                 move_to_make = (x, y)
                 best_local = local
         return move_to_make, self.node_visted, time.time() - start_time
+
+    def _test_move(self, x, y):
+        self.board[x][y] = self.player
+        self.player = 'O' if self.player == 'X' else 'X'
+
+    def _undo_move(self, x, y):
+        self.board[x][y] = '.'
+        self.player = 'O' if self.player == 'X' else 'X'

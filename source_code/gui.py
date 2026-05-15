@@ -277,7 +277,8 @@ class CaroGUI:
         cy = p + r * cs + cs // 2
 
         if player == 'X':
-            color = X_COLOR if not ghost else X_COLOR + "55"
+            GHOST_COLOR = "#D1EDFA"
+            color = X_COLOR if not ghost else GHOST_COLOR
             margin = 10
             self.canvas.create_line(cx - margin + cs//2 - cs//2, cy - margin,
                                     cx + margin, cy + margin,
@@ -368,7 +369,7 @@ class CaroGUI:
         self.game_over = True
         winner = self.game.board[x][y] if hasattr(self.game, 'board') else None
         # Try to find winner from last placed piece
-        if self.game.check_win(x, y):
+        if self.game.check_win(x, y, self.game.board):
             winner = self.game.board[x][y]
             self.scores[winner] += 1
             self._update_scores()
