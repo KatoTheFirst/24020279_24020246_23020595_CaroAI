@@ -1,11 +1,13 @@
 ﻿import time
 import math
-from re import M
 
 class agent:
-    def __init__(self, depth: int = 3):
+    def __init__(self, depth: int = 3, ai_player: str = 'O'):
         self.depth = depth
+        self.ai_player = ai_player
         self.node_visted = 0
+
+    # Hàm đánh giá
     def evaluate(self, board, size):
         score = 0
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
@@ -43,17 +45,18 @@ class agent:
                         elif count == 2 and close == 1: point = 100
                         elif count == 2 and close == 0: point = 400 # Chuỗi 2 không bị chặn có giá trị cao hơn
             
-                        if player == 'O': # Lượt máy
+                        if player == self.ai_player: # Lượt máy
                             score += point
                         else: # Lượt người
-                            # Điểm âm cho người chơi và trọng số cao hơn để AI ưu tiên chặn [cite: 41, 44]
+                            # Điểm âm cho người chơi và trọng số cao hơn để AI ưu tiên chặn
                             score -= point * 5
         return score
 
+    # Minimax lv 1
     def minimax(self, game, depth, maximizing, x, y):
         self.node_visted += 1
         if game.check_win(x, y):
-            return -500000 if maximizing else 100000
+            return -(500000 + depth) if maximizing else 500000 + depth
         if depth == 0 or game.is_draw():
             return self.evaluate(game.board, game.size)
 
@@ -76,6 +79,7 @@ class agent:
                 min_eval = min(min_eval, eval)
             return min_eval
 
+    # Tìm nước đi tốt nhất bằng minimax 
     def get_best_move(self, game):  
         self.node_visted = 0
         start_time = time.time()
