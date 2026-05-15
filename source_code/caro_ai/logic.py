@@ -3,6 +3,8 @@ class Game_Caro:
         self.size = size;
         self.board = [['.' for _ in range(size)] for _ in range(size)]
         self.current_player = 'X'
+
+    # GIAO DI?N
     def display_board(self):
         print (" ", end='')
         for i in range(self.size):
@@ -15,6 +17,8 @@ class Game_Caro:
         for i in range(self.get_available_moves().__len__()):
             print(self.get_available_moves()[i], end=' ')
         print()
+
+    # Th?c hi?n b??c ?i
     def make_move(self, x, y):
         if self.board[x][y] == '.':
             self.board[x][y] = self.current_player
@@ -31,6 +35,8 @@ class Game_Caro:
         else:
             print("Invalid move. Try again.")
             return False
+
+    # Ki?m tra th?ng thua sau n??c ?i nh?t ??nh
     def check_win(self, x, y):
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
         for dx, dy in directions:
@@ -46,6 +52,8 @@ class Game_Caro:
         return False
     def is_draw(self):
         return all(cell != '.' for row in self.board for cell in row)
+    
+    # Tìm các n??c ?i kh? thi ?u tiên l?y theo các n??c ?ã ???c ?ánh
     def get_available_moves(self):
         moves = set()
         for i in range(self.size):
@@ -61,7 +69,8 @@ class Game_Caro:
         
         if not moves: moves.add((self.size//2, self.size//2))
         return list(moves)
-        
+    
+    # ?ánh th? và quay l?i n??c ?? ai ?ánh giá
     def undo_move(self, x, y):
         self.board[x][y] = '.'
         self.current_player = 'O' if self.current_player == 'X' else 'X'
