@@ -54,6 +54,10 @@ class CaroGUI:
         self.last_move    = None
         self.win_cells    = []
         self._hover_cell  = None
+        self.move_history = []   # list of (r, c, player) cho review
+        self._review_mode = False
+        self._review_step = 0
+        self._overlay_win = None
 
         self.root = tk.Tk()
         self.root.title("CARO — Dark Edition")
@@ -334,7 +338,9 @@ class CaroGUI:
 
     def _place_move(self, r, c):
         self.last_move = (r, c)
+        player = self.game.current_player
         finished = self.game.make_move(r, c)
+        self.move_history.append((r, c, player))
         self._draw_board()
         if finished:
             self._handle_game_over(r, c)
@@ -358,7 +364,9 @@ class CaroGUI:
         self.nodes_var.set(f"{nodes:,}")
         self.time_var.set(f"{elapsed:.3f}")
         self.last_move = (x, y)
+        player = self.game.current_player
         finished = self.game.make_move(x, y)
+        self.move_history.append((x, y, player))
         self._draw_board()
         if finished:
             self._handle_game_over(x, y)
@@ -377,25 +385,272 @@ class CaroGUI:
     def _handle_game_over(self, x, y):
         self.game_over = True
         if self.game.check_win(x, y, self.game.board):
-            winner = self.game.board[x][y]  # ký hiệu thực trên bàn cờ ('X' hoặc 'O')
-            # Cộng điểm theo vai (human/ai), không gắn cứng vào ký hiệu
+            winner = self.game.board[x][y]
             if winner == self.human_player:
                 self.scores['human'] += 1
                 color = X_COLOR if self.human_player == 'X' else O_COLOR
-                label = "YOU WIN! 🎉"
-                star = True
+                label = "YOU WIN!"
+                sub   = "Congratulations 🎉"
+                star  = True
             else:
                 self.scores['ai'] += 1
                 color = O_COLOR if self.human_player == 'X' else X_COLOR
                 label = "AI WINS"
-                star = False
+                sub   = "Better luck next time"
+                star  = False
             self._update_scores()
             self._set_status(f"{'★   ' if star else ''}  {label}  {'   ★' if star else ''}", color)
             self._highlight_win(x, y, winner)
         else:
             self.scores['Draw'] += 1
             self._update_scores()
+            color = TEXT_MUTED
+            label = "DRAW"
+            sub   = "Well played"
             self._set_status("DRAW  —  Well played", TEXT_MUTED)
+
+        # Delay nhỏ để highlight win hiện trước rồi mới popup
+        self.root.after(600, lambda: self._show_endgame_popup(label, sub, color))
+
+    # ──────────────────────────────────────────────────── END-GAME POPUP ────
+    def _show_endgame_popup(self, label, sub, accent_color):
+        """Hiện popup dạng horizontal bar giữa màn hình."""
+        if self._overlay_win and tk.Toplevel.winfo_exists(self._overlay_win):
+            self._overlay_win.destroy()
+
+        popup = tk.Toplevel(self.root)
+        popup.overrideredirect(True)      # không có title bar
+        popup.attributes('-topmost', True)
+        popup.configure(bg=WIN_HIGHLIGHT)  # viền vàng 2px
+
+        # ── Nội dung bên trong
+        inner = tk.Frame(popup, bg=BG_PANEL)
+        inner.pack(padx=2, pady=2)
+
+        # Dòng kẻ ngang vàng trên cùng
+        tk.Frame(inner, bg=WIN_HIGHLIGHT, height=3).pack(fill='x')
+
+        content = tk.Frame(inner, bg=BG_PANEL)
+        content.pack(fill='x', padx=30, pady=20)
+
+        # Label kết quả
+        tk.Label(content, text=label,
+                 font=("Courier New", 22, "bold"),
+                 fg=accent_color, bg=BG_PANEL).pack()
+
+        tk.Label(content, text=sub,
+                 font=("Courier New", 10),
+                 fg=TEXT_MUTED, bg=BG_PANEL).pack(pady=(2, 14))
+
+        # Dòng kẻ vàng giữa
+        tk.Frame(content, bg=WIN_HIGHLIGHT, height=2).pack(fill='x', pady=(0, 18))
+
+        # Nút
+        btn_frame = tk.Frame(content, bg=BG_PANEL)
+        btn_frame.pack()
+
+        def _btn(parent, text, fg, cmd):
+            b = tk.Button(parent, text=text,
+                          font=("Courier New", 10, "bold"),
+                          bg=BTN_BG, fg=fg, relief='flat',
+                          activebackground=BTN_HOVER, activeforeground=fg,
+                          cursor='hand2', padx=18, pady=8,
+                          highlightbackground=BTN_BORDER, highlightthickness=1,
+                          command=cmd)
+            b.pack(side='left', padx=8)
+            return b
+
+        _btn(btn_frame, "▶  NEW GAME", X_COLOR,  lambda: self._popup_new_game(popup))
+        _btn(btn_frame, "◀  REVIEW",  O_COLOR,   lambda: self._popup_review(popup))
+
+        # Dòng kẻ ngang vàng dưới cùng
+        tk.Frame(inner, bg=WIN_HIGHLIGHT, height=3).pack(fill='x')
+
+        # ── Căn giữa popup theo cửa sổ chính
+        self.root.update_idletasks()
+        rw = self.root.winfo_width()
+        rh = self.root.winfo_height()
+        rx = self.root.winfo_rootx()
+        ry = self.root.winfo_rooty()
+        popup.update_idletasks()
+        pw = popup.winfo_width()
+        ph = popup.winfo_height()
+        x  = rx + (rw - pw) // 2
+        y  = ry + (rh - ph) // 2
+        popup.geometry(f"+{x}+{y}")
+
+        self._overlay_win = popup
+
+    def _popup_new_game(self, popup):
+        popup.destroy()
+        self._overlay_win = None
+        self._new_game()
+
+    def _popup_review(self, popup):
+        """Đóng popup, vào chế độ review."""
+        popup.destroy()
+        self._overlay_win = None
+        if not self.move_history:
+            return
+        self._review_mode = True
+        self._review_step = 0
+        # Hiện toolbar review
+        self._show_review_bar()
+        self._review_draw()
+
+    # ──────────────────────────────────────────────────── REVIEW MODE ────────
+    def _show_review_bar(self):
+        """Thanh điều khiển review xuất hiện ở dưới cùng."""
+        self._review_bar = tk.Toplevel(self.root)
+        self._review_bar.overrideredirect(True)
+        self._review_bar.attributes('-topmost', True)
+        self._review_bar.configure(bg=WIN_HIGHLIGHT)
+
+        inner = tk.Frame(self._review_bar, bg=BG_PANEL)
+        inner.pack(padx=2, pady=2)
+
+        tk.Frame(inner, bg=WIN_HIGHLIGHT, height=2).pack(fill='x')
+
+        bar = tk.Frame(inner, bg=BG_PANEL)
+        bar.pack(padx=20, pady=10)
+
+        def _btn(txt, fg, cmd):
+            b = tk.Button(bar, text=txt, font=("Courier New", 10, "bold"),
+                          bg=BTN_BG, fg=fg, relief='flat',
+                          activebackground=BTN_HOVER, activeforeground=fg,
+                          cursor='hand2', padx=14, pady=6,
+                          highlightbackground=BTN_BORDER, highlightthickness=1,
+                          command=cmd)
+            b.pack(side='left', padx=5)
+            return b
+
+        _btn("◀◀ START", TEXT_MUTED,    lambda: self._review_goto(0))
+        self._btn_prev = _btn("◀ PREV",  TEXT_PRIMARY, self._review_prev)
+        self._review_counter = tk.Label(bar, text="0 / 0",
+                                        font=("Courier New", 10, "bold"),
+                                        fg=WIN_HIGHLIGHT, bg=BG_PANEL, width=8)
+        self._review_counter.pack(side='left', padx=8)
+        self._btn_next = _btn("NEXT ▶",  TEXT_PRIMARY, self._review_next)
+        _btn("END ▶▶",  TEXT_MUTED,    lambda: self._review_goto(len(self.move_history)))
+
+        tk.Frame(bar, bg=GRID_LINE, width=2).pack(side='left', fill='y', padx=10)
+
+        _btn("✕  BACK", O_COLOR, self._review_back)
+
+        tk.Frame(inner, bg=WIN_HIGHLIGHT, height=2).pack(fill='x')
+
+        # Posiziona sotto il canvas
+        self.root.update_idletasks()
+        self._review_bar.update_idletasks()
+        rx = self.root.winfo_rootx()
+        ry = self.root.winfo_rooty()
+        rw = self.root.winfo_width()
+        rh = self.root.winfo_height()
+        bw = self._review_bar.winfo_width()
+        x  = rx + (rw - bw) // 2
+        y  = ry + rh + 4          # ngay dưới cửa sổ chính
+        self._review_bar.geometry(f"+{x}+{y}")
+
+    def _review_draw(self):
+        """Vẽ lại bàn cờ tại bước self._review_step."""
+        step = self._review_step
+        total = len(self.move_history)
+
+        # Xây lại board từ đầu đến step
+        board = [['.' for _ in range(self.size)] for _ in range(self.size)]
+        last = None
+        for i in range(step):
+            r, c, p = self.move_history[i]
+            board[r][c] = p
+            last = (r, c)
+
+        # Vẽ thủ công không dùng self.game.board
+        self.canvas.delete("all")
+        cs = CELL_SIZE
+        p_ = PADDING
+        sz = self.size
+
+        for r in range(sz):
+            for c in range(sz):
+                x0 = p_ + c * cs + 2; y0 = p_ + r * cs + 2
+                self.canvas.create_rectangle(x0, y0, x0+cs-4, y0+cs-4,
+                                             fill=CELL_NORMAL, outline="")
+        for i in range(sz + 1):
+            x = p_ + i * cs
+            self.canvas.create_line(x, p_, x, p_+sz*cs, fill=GRID_LINE, width=1)
+            self.canvas.create_line(p_, x, p_+sz*cs, x, fill=GRID_LINE, width=1)
+
+        for r in range(sz):
+            for c in range(sz):
+                if board[r][c] != '.':
+                    self._draw_piece(r, c, board[r][c])
+
+        # Highlight nước vừa đi
+        if last:
+            lr, lc = last
+            col = X_COLOR if board[lr][lc] == 'X' else O_COLOR
+            self.canvas.create_rectangle(
+                p_+lc*cs+2, p_+lr*cs+2, p_+lc*cs+cs-2, p_+lr*cs+cs-2,
+                outline=col, width=2, fill="")
+
+        # Số thứ tự nước đi (nhỏ ở góc ô)
+        for i in range(step):
+            r, c, pl = self.move_history[i]
+            cx = p_ + c*cs + cs - 8
+            cy = p_ + r*cs + 6
+            num_col = "#1C4A6E" if pl == 'X' else "#6E1C1C"
+            self.canvas.create_text(cx, cy, text=str(i+1),
+                                    font=("Courier New", 7), fill=num_col, anchor='ne')
+
+        # Counter
+        self._review_counter.config(text=f"{step} / {total}")
+
+        # Cập nhật trạng thái nút
+        self._btn_prev.config(state='normal' if step > 0 else 'disabled')
+        self._btn_next.config(state='normal' if step < total else 'disabled')
+
+        self._set_status(
+            f"REVIEW  ·  Move {step} / {total}" if step > 0
+            else "REVIEW  ·  Start position",
+            WIN_HIGHLIGHT
+        )
+
+    def _review_goto(self, step):
+        self._review_step = max(0, min(step, len(self.move_history)))
+        self._review_draw()
+
+    def _review_prev(self):
+        if self._review_step > 0:
+            self._review_step -= 1
+            self._review_draw()
+
+    def _review_next(self):
+        if self._review_step < len(self.move_history):
+            self._review_step += 1
+            self._review_draw()
+
+    def _review_back(self):
+        """Thoát review, hiện lại popup kết quả."""
+        if hasattr(self, '_review_bar') and self._review_bar.winfo_exists():
+            self._review_bar.destroy()
+        self._review_mode = False
+        # Vẽ lại bàn cờ thật (trạng thái kết thúc)
+        self._draw_board()
+        # Hiện lại popup kết quả
+        # Lấy lại thông tin từ scores để tái tạo popup
+        hum = self.scores['human']
+        ai  = self.scores['ai']
+        # so với trước khi game over thì hum/ai đã +1 rồi
+        last_r, last_c, _ = self.move_history[-1]
+        winner_sym = self.game.board[last_r][last_c]
+        if self.game.check_win(last_r, last_c, self.game.board):
+            if winner_sym == self.human_player:
+                color, label, sub = (X_COLOR if self.human_player=='X' else O_COLOR), "YOU WIN!", "Congratulations 🎉"
+            else:
+                color, label, sub = (O_COLOR if self.human_player=='X' else X_COLOR), "AI WINS", "Better luck next time"
+        else:
+            color, label, sub = TEXT_MUTED, "DRAW", "Well played"
+        self._show_endgame_popup(label, sub, color)
 
     def _highlight_win(self, lx, ly, player):
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
@@ -423,11 +678,16 @@ class CaroGUI:
 
     # ──────────────────────────────────────────────────────── CONTROLS ───────
     def _new_game(self):
+        # Đóng review bar nếu đang mở
+        if hasattr(self, '_review_bar') and self._review_bar.winfo_exists():
+            self._review_bar.destroy()
+        self._review_mode = False
         self.game      = self.game_factory()
         self.game_over = False
         self.last_move = None
         self.win_cells = []
         self._hover_cell = None
+        self.move_history = []
         self.nodes_var.set("—")
         self.time_var.set("—")
         self.thinking_var.set("")
