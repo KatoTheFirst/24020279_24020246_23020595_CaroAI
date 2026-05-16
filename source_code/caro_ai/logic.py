@@ -14,7 +14,9 @@ class Game_Caro:
             print(f" {i}", end='')
         print()
 
-        for idx, row in enumerate(self.board):
+        for idx, row in enumerate(
+
+                self.board):
             print(f"{idx} " + ' '.join(row))
 
         for i in range(self.get_available_moves(self.board).__len__()):
@@ -57,7 +59,7 @@ class Game_Caro:
     def is_draw(self, board):
         return all(cell != '.' for row in board for cell in row)
     
-    # Tìm các n??c ?i kh? thi ?u tiên l?y theo các n??c ?ã ???c ?ánh
+    # Tï¿½m cï¿½c n??c ?i kh? thi ?u tiï¿½n l?y theo cï¿½c n??c ?ï¿½ ???c ?ï¿½nh
     def get_available_moves(self, board):
         moves = set()
         for i in range(self.size):

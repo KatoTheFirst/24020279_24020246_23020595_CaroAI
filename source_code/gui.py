@@ -4,17 +4,17 @@ import threading
 import time
 
 # ─── COLOR PALETTE ────────────────────────────────────────────────────────────
-BG_DARK       = "#0D1117"   # nền chính
-BG_PANEL      = "#161B22"   # panel bên
-BG_BOARD      = "#0D1117"   # nền bàn cờ
-CELL_NORMAL   = "#1C2333"   # ô bình thường
-CELL_HOVER    = "#243044"   # ô khi hover
-GRID_LINE     = "#2D3748"   # đường lưới
-X_COLOR       = "#38BDF8"   # xanh nước (X)
+BG_DARK       = "#0D1117"
+BG_PANEL      = "#161B22"
+BG_BOARD      = "#0D1117"
+CELL_NORMAL   = "#1C2333"
+CELL_HOVER    = "#243044"
+GRID_LINE     = "#2D3748"
+X_COLOR       = "#38BDF8"
 X_GLOW        = "#0EA5E9"
-O_COLOR       = "#F87171"   # đỏ nhạt (O)
+O_COLOR       = "#F87171"
 O_GLOW        = "#EF4444"
-WIN_HIGHLIGHT = "#FFD700"   # vàng cho ô thắng
+WIN_HIGHLIGHT = "#FFD700"
 TEXT_PRIMARY  = "#E2E8F0"
 TEXT_MUTED    = "#64748B"
 TEXT_X        = X_COLOR
@@ -49,7 +49,8 @@ class CaroGUI:
         self.ai_player    = 'O'
         self.ai_thinking  = False
         self.game_over    = False
-        self.scores       = {'X': 0, 'O': 0, 'Draw': 0}
+        # scores['human'] và scores['ai'] thay vì gắn cứng vào ký hiệu X/O
+        self.scores       = {'human': 0, 'ai': 0, 'Draw': 0}
         self.last_move    = None
         self.win_cells    = []
         self._hover_cell  = None
@@ -90,9 +91,9 @@ class CaroGUI:
         self.canvas = tk.Canvas(body, width=canvas_size, height=canvas_size,
                                 bg=BG_BOARD, highlightthickness=0)
         self.canvas.pack(side='left')
-        self.canvas.bind("<Motion>",          self._on_hover)
-        self.canvas.bind("<Button-1>",        self._on_click)
-        self.canvas.bind("<Leave>",           self._on_leave)
+        self.canvas.bind("<Motion>",   self._on_hover)
+        self.canvas.bind("<Button-1>", self._on_click)
+        self.canvas.bind("<Leave>",    self._on_leave)
 
         # Right panel
         self.right = tk.Frame(body, bg=BG_PANEL, width=160,
@@ -119,29 +120,31 @@ class CaroGUI:
         tk.Label(self.left, text="SCORE", font=("Courier New", 8, "bold"),
                  fg=TEXT_MUTED, **pad).pack(pady=(18, 4))
 
-        # X score
+        # Human score (luôn hiển thị màu theo ký hiệu người chơi chọn)
         xf = tk.Frame(self.left, **pad)
         xf.pack(fill='x', padx=14, pady=4)
-        tk.Label(xf, text="X", font=("Courier New", 13, "bold"),
-                 fg=X_COLOR, **pad).pack(side='left')
+        self.label_human_sym = tk.Label(xf, text="X", font=("Courier New", 13, "bold"),
+                                        fg=X_COLOR, **pad)
+        self.label_human_sym.pack(side='left')
         tk.Label(xf, text="YOU", font=("Courier New", 7),
                  fg=TEXT_MUTED, **pad).pack(side='left', padx=4, pady=2)
-        self.score_x = tk.Label(xf, text="0", font=FONT_SCORE,
-                                fg=X_COLOR, **pad)
-        self.score_x.pack(side='right')
+        self.score_human = tk.Label(xf, text="0", font=FONT_SCORE,
+                                    fg=X_COLOR, **pad)
+        self.score_human.pack(side='right')
 
         tk.Frame(self.left, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=2)
 
-        # O score
+        # AI score
         of = tk.Frame(self.left, **pad)
         of.pack(fill='x', padx=14, pady=4)
-        tk.Label(of, text="O", font=("Courier New", 13, "bold"),
-                 fg=O_COLOR, **pad).pack(side='left')
+        self.label_ai_sym = tk.Label(of, text="O", font=("Courier New", 13, "bold"),
+                                     fg=O_COLOR, **pad)
+        self.label_ai_sym.pack(side='left')
         tk.Label(of, text="AI", font=("Courier New", 7),
                  fg=TEXT_MUTED, **pad).pack(side='left', padx=4, pady=2)
-        self.score_o = tk.Label(of, text="0", font=FONT_SCORE,
-                                fg=O_COLOR, **pad)
-        self.score_o.pack(side='right')
+        self.score_ai = tk.Label(of, text="0", font=FONT_SCORE,
+                                 fg=O_COLOR, **pad)
+        self.score_ai.pack(side='right')
 
         tk.Frame(self.left, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=2)
 
@@ -248,13 +251,12 @@ class CaroGUI:
         # Last move highlight
         if self.last_move:
             lr, lc = self.last_move
-            cx = p + lc * cs + cs // 2
-            cy = p + lr * cs + cs // 2
+            piece_color = X_COLOR if self.game.board[lr][lc] == 'X' else O_COLOR
+            outline_color = WIN_HIGHLIGHT if self.win_cells else piece_color
             self.canvas.create_rectangle(
                 p + lc * cs + 2, p + lr * cs + 2,
                 p + lc * cs + cs - 2, p + lr * cs + cs - 2,
-                outline=WIN_HIGHLIGHT if self.win_cells else (X_COLOR if self.game.board[lr][lc] == 'X' else O_COLOR),
-                width=2, fill=""
+                outline=outline_color, width=2, fill=""
             )
 
         # Win highlight
@@ -264,7 +266,7 @@ class CaroGUI:
             self.canvas.create_rectangle(x0, y0, x0 + cs - 6, y0 + cs - 6,
                                          fill=WIN_HIGHLIGHT + "33", outline=WIN_HIGHLIGHT, width=2)
 
-        # Hover ghost piece
+        # Hover ghost piece — hiển thị cho cả X lẫn O
         if self._hover_cell and not self.game_over and not self.ai_thinking:
             hr, hc = self._hover_cell
             if self.game.board[hr][hc] == '.':
@@ -276,21 +278,28 @@ class CaroGUI:
         cx = p + c * cs + cs // 2
         cy = p + r * cs + cs // 2
 
+        # margin xác định kích thước — dùng chung cho X và O
+        margin = 10
+
         if player == 'X':
-            GHOST_COLOR = "#D1EDFA"
-            color = X_COLOR if not ghost else GHOST_COLOR
-            margin = 10
-            self.canvas.create_line(cx - margin + cs//2 - cs//2, cy - margin,
+            color = X_COLOR if not ghost else "#5BBFDB"
+            self.canvas.create_line(cx - margin, cy - margin,
                                     cx + margin, cy + margin,
                                     fill=color, width=4, capstyle='round')
             self.canvas.create_line(cx + margin, cy - margin,
                                     cx - margin, cy + margin,
                                     fill=color, width=4, capstyle='round')
         else:
-            color = O_COLOR if not ghost else O_COLOR + "55"
-            r_ = cs // 2 - 10
-            self.canvas.create_oval(cx - r_, cy - r_, cx + r_, cy + r_,
-                                    outline=color, width=4)
+            # tkinter không hỗ trợ alpha hex — ghost dùng màu solid tối hơn
+            color = "#A84444" if ghost else O_COLOR
+            r_ = margin
+            # Vẽ 2 oval lồng nhau (±1px) để nét dày tương đương X width=4
+            self.canvas.create_oval(cx - r_ - 1, cy - r_ - 1,
+                                    cx + r_ + 1, cy + r_ + 1,
+                                    outline=color, width=2, fill="")
+            self.canvas.create_oval(cx - r_ + 1, cy - r_ + 1,
+                                    cx + r_ - 1, cy + r_ - 1,
+                                    outline=color, width=2, fill="")
 
     # ──────────────────────────────────────────────────────── EVENTS ─────────
     def _cell_from_event(self, event):
@@ -331,7 +340,7 @@ class CaroGUI:
             self._handle_game_over(r, c)
             return
         if not self.game_over:
-            self._set_status(f"AI thinking…  O", TEXT_MUTED)
+            self._set_status(f"AI thinking…  {self.ai_player}", TEXT_MUTED)
             self.thinking_var.set("▌")
             self.root.after(80, self._ai_turn)
 
@@ -354,7 +363,7 @@ class CaroGUI:
         if finished:
             self._handle_game_over(x, y)
         else:
-            self._set_status(f"Your turn  ›  X", TEXT_PRIMARY)
+            self._set_status(f"Your turn  ›  {self.human_player}", TEXT_PRIMARY)
 
     def _animate_thinking(self):
         if not self.ai_thinking:
@@ -367,15 +376,21 @@ class CaroGUI:
 
     def _handle_game_over(self, x, y):
         self.game_over = True
-        winner = self.game.board[x][y] if hasattr(self.game, 'board') else None
-        # Try to find winner from last placed piece
         if self.game.check_win(x, y, self.game.board):
-            winner = self.game.board[x][y]
-            self.scores[winner] += 1
+            winner = self.game.board[x][y]  # ký hiệu thực trên bàn cờ ('X' hoặc 'O')
+            # Cộng điểm theo vai (human/ai), không gắn cứng vào ký hiệu
+            if winner == self.human_player:
+                self.scores['human'] += 1
+                color = X_COLOR if self.human_player == 'X' else O_COLOR
+                label = "YOU WIN! 🎉"
+                star = True
+            else:
+                self.scores['ai'] += 1
+                color = O_COLOR if self.human_player == 'X' else X_COLOR
+                label = "AI WINS"
+                star = False
             self._update_scores()
-            color = X_COLOR if winner == 'X' else O_COLOR
-            label = "YOU WIN! 🎉" if winner == self.human_player else "AI WINS"
-            self._set_status(f"{'★  ' if winner==self.human_player else ''}  {label}  {'  ★' if winner==self.human_player else ''}", color)
+            self._set_status(f"{'★   ' if star else ''}  {label}  {'   ★' if star else ''}", color)
             self._highlight_win(x, y, winner)
         else:
             self.scores['Draw'] += 1
@@ -402,8 +417,8 @@ class CaroGUI:
         self.status_var.set(text)
 
     def _update_scores(self):
-        self.score_x.config(text=str(self.scores['X']))
-        self.score_o.config(text=str(self.scores['O']))
+        self.score_human.config(text=str(self.scores['human']))
+        self.score_ai.config(text=str(self.scores['ai']))
         self.score_d.config(text=str(self.scores['Draw']))
 
     # ──────────────────────────────────────────────────────── CONTROLS ───────
@@ -417,12 +432,12 @@ class CaroGUI:
         self.time_var.set("—")
         self.thinking_var.set("")
 
-        # If human chose O, AI goes first
+        # Nếu người chơi chọn O thì AI (X) đi trước
         if self.human_player == 'O':
-            self._set_status("AI thinking…  X", TEXT_MUTED)
+            self._set_status(f"AI thinking…  X", TEXT_MUTED)
             self.root.after(80, self._ai_turn)
         else:
-            self._set_status("Your turn  ›  X", TEXT_PRIMARY)
+            self._set_status(f"Your turn  ›  X", TEXT_PRIMARY)
 
         self._draw_board()
 
@@ -437,13 +452,20 @@ class CaroGUI:
         self.game_over  = False
         self.win_cells  = []
         self.last_move  = None
-        self._set_status("Your turn  ›  X", TEXT_PRIMARY)
+        self._set_status(f"Your turn  ›  {self.human_player}", TEXT_PRIMARY)
         self._draw_board()
 
     def _pick_side(self, sym):
         self.human_player = sym
         self.ai_player    = 'O' if sym == 'X' else 'X'
         self._highlight_side_btn(sym)
+        # Cập nhật label score panel theo ký hiệu thực
+        human_color = X_COLOR if sym == 'X' else O_COLOR
+        ai_color    = O_COLOR if sym == 'X' else X_COLOR
+        self.label_human_sym.config(text=sym, fg=human_color)
+        self.score_human.config(fg=human_color)
+        self.label_ai_sym.config(text=self.ai_player, fg=ai_color)
+        self.score_ai.config(fg=ai_color)
         self._new_game()
 
     def _highlight_side_btn(self, sym):
