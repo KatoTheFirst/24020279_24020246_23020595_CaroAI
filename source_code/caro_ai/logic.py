@@ -1,30 +1,16 @@
 import random
+from tkinter import LAST
 
 
 class Game_Caro:
-    def __init__(self, size = 15):
+    def __init__(self, size = 9):
         self.size = size;
         self.board = [['.' for _ in range(size)] for _ in range(size)]
         self.current_player = 'X'
 
-    # GIAO DI?N
-    def display_board(self):
-        print (" ", end='')
-        for i in range(self.size):
-            print(f" {i}", end='')
-        print()
-
-        for idx, row in enumerate(
-
-                self.board):
-            print(f"{idx} " + ' '.join(row))
-
-        for i in range(self.get_available_moves(self.board).__len__()):
-            print(self.get_available_moves(self.board)[i], end=' ')
-        print()
-
     # Th?c hi?n b??c ?i
     def make_move(self, x, y):
+        print (f"Player {self.current_player} moves to ({x}, {y})")
         if self.board[x][y] == '.':
             self.board[x][y] = self.current_player
             if self.is_draw(self.board):
@@ -32,7 +18,6 @@ class Game_Caro:
                 return True
 
             if self.check_win(x, y, self.board):
-                self.display_board()
                 print(f"Player {self.current_player} wins!")
                 return True
             self.current_player = 'O' if self.current_player == 'X' else 'X'

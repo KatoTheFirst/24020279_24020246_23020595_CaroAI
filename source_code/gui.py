@@ -695,6 +695,7 @@ class CaroGUI:
         # Nếu người chơi chọn O thì AI (X) đi trước
         if self.human_player == 'O':
             self._set_status(f"AI thinking…  X", TEXT_MUTED)
+            self.ai.ai_player = 'X'  # đảm bảo AI biết mình là X
             self.root.after(80, self._ai_turn)
         else:
             self._set_status(f"Your turn  ›  X", TEXT_PRIMARY)
