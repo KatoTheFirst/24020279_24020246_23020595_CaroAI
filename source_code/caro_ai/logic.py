@@ -50,13 +50,13 @@ class Game_Caro:
         for i in range(self.size):
             for j in range(self.size):
                 if board[i][j] != '.':
-                    for dx in range(-1, 2):
-                        for dy in range(-1, 2):
+                    for dx in range(-2, 3):
+                        for dy in range(-2, 3):
                             if dx == 0 and dy == 0:
                                 continue
                             nx, ny = i + dx, j + dy
                             if 0 <= nx < len(board) and 0 <= ny < len(board) and board[nx][ny] == '.':
                                 moves.add((nx, ny))
         
-        if not moves: moves.add((random.randint(1,len(board) - 2), random.randint(1, len(board) - 2)))
+        if not moves: moves.add((len(board)//2 + random.randint(-1, 1), len(board)//2 + random.randint(-1, 1)))
         return list(moves)

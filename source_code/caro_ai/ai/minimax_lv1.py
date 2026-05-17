@@ -18,7 +18,7 @@ class agent:
                     for dx, dy in directions:
                         close = 0
                         count = 1
-                        nx, ny = x -dx, y - dy
+                        nx, ny = x - dx, y - dy
                         if 0 <= nx < size and 0 <= ny < size:
                             if self.board[nx][ny] == player:
                                 continue
