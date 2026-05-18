@@ -76,7 +76,7 @@ class CaroGUI:
 
         tk.Label(header, text="⬡  CARO", font=FONT_TITLE,
                  bg=BG_DARK, fg=TEXT_PRIMARY).pack(side='left')
-        tk.Label(header, text="DARK EDITION", font=("Courier New", 8, "bold"),
+        tk.Label(header, text="SO SO SO", font=("Courier New", 8, "bold"),
                  bg=BG_DARK, fg=TEXT_MUTED).pack(side='left', padx=(8, 0), pady=(8, 0))
 
         # ── Main layout
@@ -163,22 +163,7 @@ class CaroGUI:
                                 fg=TEXT_MUTED, **pad)
         self.score_d.pack(side='right')
 
-        # ── Side picker
-        tk.Frame(self.left, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=(16, 4))
-        tk.Label(self.left, text="PLAY AS", font=("Courier New", 8, "bold"),
-                 fg=TEXT_MUTED, **pad).pack(pady=(4, 6))
-        sf = tk.Frame(self.left, **pad)
-        sf.pack()
-        self._side_btns = {}
-        for sym, col in [('X', X_COLOR), ('O', O_COLOR)]:
-            b = tk.Button(sf, text=sym, font=("Courier New", 11, "bold"),
-                          bg=CELL_NORMAL, fg=col, width=3, relief='flat',
-                          activebackground=CELL_HOVER, activeforeground=col,
-                          cursor='hand2',
-                          command=lambda s=sym: self._pick_side(s))
-            b.pack(side='left', padx=4)
-            self._side_btns[sym] = b
-        self._highlight_side_btn('X')
+
 
     def _build_right_panel(self):
         pad = dict(bg=BG_PANEL)

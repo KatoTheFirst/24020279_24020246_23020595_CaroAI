@@ -1,5 +1,5 @@
 from caro_ai.logic import Game_Caro
-# SỬA DÒNG NÀY: Import từ file cấu hình lv2 mới tạo
+
 from caro_ai.ai.minimax_lv2 import agent
 from gui import CaroGUI
 
