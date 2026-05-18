@@ -182,7 +182,7 @@ class CaroGUI:
 
     def _build_right_panel(self):
         pad = dict(bg=BG_PANEL)
-        tk.Label(self.right, text="INFO", font=("Courier New", 8, "bold"),
+        tk.Label(self.right, text="INFO", font=FONT_LABEL,
                  fg=TEXT_MUTED, **pad).pack(pady=(18, 8))
 
         tk.Label(self.right, text="NODES", font=FONT_LABEL,
@@ -206,9 +206,22 @@ class CaroGUI:
         tk.Label(self.right, text=str(self.ai.depth),
                  font=("Courier New", 12, "bold"), fg=ACCENT, **pad).pack(anchor='w', padx=14)
 
-        tk.Frame(self.right, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=(8, 16))
+        tk.Frame(self.right, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=8)
 
-        # Buttons
+        # ─── THÀNH PHẦN CHÈN MỚI CHO LEVEL 2: CHỌN CHẾ ĐỘ AI ───
+        tk.Label(self.right, text="AI MODE", font=FONT_LABEL, fg=TEXT_MUTED, **pad).pack(anchor='w', padx=14)
+        self.ai_mode_var = tk.StringVar(value="alphabeta")  # Mặc định chọn Alpha-Beta
+
+        for text_mode, val_mode in [("Minimax", "minimax"), ("Alpha-Beta", "alphabeta"), ("Đối Sánh", "compare")]:
+            rb = tk.Radiobutton(self.right, text=text_mode, value=val_mode, variable=self.ai_mode_var,
+                                font=("Courier New", 9), bg=BG_PANEL, fg=TEXT_PRIMARY, selectcolor=BG_DARK,
+                                activebackground=BG_PANEL, activeforeground=TEXT_PRIMARY, anchor='w')
+            rb.pack(fill='x', padx=14, pady=2)
+
+        tk.Frame(self.right, bg=GRID_LINE, height=1).pack(fill='x', padx=14, pady=(8, 16))
+        # ───────────────────────────────────────────────────────
+
+        # Buttons gốc giữ nguyên
         for txt, cmd in [("NEW GAME", self._new_game), ("UNDO", self._undo)]:
             b = tk.Button(self.right, text=txt, font=FONT_BTN,
                           bg=BTN_BG, fg=TEXT_PRIMARY, relief='flat',
@@ -217,7 +230,6 @@ class CaroGUI:
                           highlightbackground=BTN_BORDER, highlightthickness=1,
                           command=cmd)
             b.pack(padx=14, pady=4)
-
     # ──────────────────────────────────────────────────────── DRAW ───────────
     def _draw_board(self):
         self.canvas.delete("all")
@@ -354,7 +366,8 @@ class CaroGUI:
         self.ai_thinking = True
         self._animate_thinking()
         def run():
-            (x, y), nodes, elapsed = self.ai.get_best_move(self.game)
+            current_mode = self.ai_mode_var.get()
+            (x, y), nodes, elapsed = self.ai.get_best_move(self.game, mode=current_mode)
             self.root.after(0, lambda: self._finish_ai(x, y, nodes, elapsed))
         threading.Thread(target=run, daemon=True).start()
 
@@ -695,7 +708,6 @@ class CaroGUI:
         # Nếu người chơi chọn O thì AI (X) đi trước
         if self.human_player == 'O':
             self._set_status(f"AI thinking…  X", TEXT_MUTED)
-            self.ai.ai_player = 'X'  # đảm bảo AI biết mình là X
             self.root.after(80, self._ai_turn)
         else:
             self._set_status(f"Your turn  ›  X", TEXT_PRIMARY)
@@ -720,7 +732,6 @@ class CaroGUI:
         self.human_player = sym
         self.ai_player    = 'O' if sym == 'X' else 'X'
         self._highlight_side_btn(sym)
-        # Cập nhật label score panel theo ký hiệu thực
         human_color = X_COLOR if sym == 'X' else O_COLOR
         ai_color    = O_COLOR if sym == 'X' else X_COLOR
         self.label_human_sym.config(text=sym, fg=human_color)
