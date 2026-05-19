@@ -43,8 +43,7 @@ class Game_Caro:
 
     def is_draw(self, board):
         return all(cell != '.' for row in board for cell in row)
-    
-    # T�m c�c n??c ?i kh? thi ?u ti�n l?y theo c�c n??c ?� ???c ?�nh
+
     def get_available_moves(self, board):
         moves = set()
         for i in range(self.size):

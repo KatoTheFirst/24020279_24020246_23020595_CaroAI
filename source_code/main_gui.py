@@ -1,5 +1,4 @@
 from caro_ai.logic import Game_Caro
-
 from caro_ai.ai.minimax_lv2 import agent
 from gui import CaroGUI
 
