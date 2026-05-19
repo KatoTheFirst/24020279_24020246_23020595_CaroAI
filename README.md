@@ -1,20 +1,6 @@
 # Caro AI
 
-Ứng dụng chơi cờ Caro với trí tuệ nhân tạo sử dụng thuật toán Minimax kết hợp Alpha-Beta Pruning.
-
----
-
-## Yêu cầu hệ thống
-
-- Python 3.10 trở lên
-- Tkinter (thường đã có sẵn khi cài Python)
-
-Kiểm tra bằng lệnh:
-
-```bash
-python --version
-python -m tkinter
-```
+Ứng dụng chơi cờ Caro với trí tuệ nhân tạo
 
 ---
 
