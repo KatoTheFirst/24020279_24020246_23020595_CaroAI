@@ -64,7 +64,7 @@ ai = agent(depth=2)
 ```
 
 4. Lưu file và chạy lại chương trình (python main_gui.py).
-5. 
+ 
 ---
 
 ## Cấu trúc thư mục
