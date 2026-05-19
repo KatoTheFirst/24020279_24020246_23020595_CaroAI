@@ -170,7 +170,7 @@ class CaroGUI:
         sf = tk.Frame(self.left, **pad)
         sf.pack()
         self._side_btns = {}
-        for sym, col in [('X', X_COLOR), ('O', O_COLOR)]:
+        for sym, col in [('X', X_COLOR)]:
             b = tk.Button(sf, text=sym, font=("Courier New", 11, "bold"),
                           bg=CELL_NORMAL, fg=col, width=3, relief='flat',
                           activebackground=CELL_HOVER, activeforeground=col,
@@ -705,12 +705,12 @@ class CaroGUI:
         self.time_var.set("—")
         self.thinking_var.set("")
 
-        # Nếu người chơi chọn O thì AI (X) đi trước
-        if self.human_player == 'O':
-            self._set_status(f"AI thinking…  X", TEXT_MUTED)
-            self.root.after(80, self._ai_turn)
-        else:
-            self._set_status(f"Your turn  ›  X", TEXT_PRIMARY)
+        self.human_player = 'X'
+        self.ai_player = 'O'
+
+        self.ai.ai_player = 'O'
+
+        self._set_status("Your turn  ›  X", TEXT_PRIMARY)
 
         self._draw_board()
 
