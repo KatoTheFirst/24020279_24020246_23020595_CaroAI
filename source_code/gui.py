@@ -52,6 +52,8 @@ class CaroGUI:
         # scores['human'] và scores['ai'] thay vì gắn cứng vào ký hiệu X/O
         self.scores       = {'human': 0, 'ai': 0, 'Draw': 0}
         self.last_move    = None
+        self.last_human   = None
+        self.last_ai      = None
         self.win_cells    = []
         self._hover_cell  = None
         self.move_history = []   # list of (r, c, player) cho review
@@ -350,6 +352,7 @@ class CaroGUI:
 
     def _place_move(self, r, c):
         self.last_move = (r, c)
+        self.last_human = (r, c)
         player = self.game.current_player
         finished = self.game.make_move(r, c)
         self.move_history.append((r, c, player))
@@ -718,10 +721,15 @@ class CaroGUI:
         if self.ai_thinking or not hasattr(self.game, 'undo_move'):
             return
         # Undo AI + human moves (2 plies)
-        for _ in range(2):
-            if self.last_move:
-                r, c = self.last_move
-                self.game.undo_move(r, c)
+
+        if (self.last_move):
+            r, c = self.last_move
+            self.game.undo_move(r, c)
+
+        if (self.last_human):
+            r, c = self.last_human
+            self.game.undo_move(r, c)
+
         self.game_over  = False
         self.win_cells  = []
         self.last_move  = None

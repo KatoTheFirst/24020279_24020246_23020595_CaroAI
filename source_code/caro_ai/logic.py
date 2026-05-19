@@ -8,7 +8,7 @@ class Game_Caro:
         self.board = [['.' for _ in range(size)] for _ in range(size)]
         self.current_player = 'X'
 
-    # Th?c hi?n b??c ?i
+
     def make_move(self, x, y):
         print (f"Player {self.current_player} moves to ({x}, {y})")
         if self.board[x][y] == '.':
@@ -59,3 +59,11 @@ class Game_Caro:
         
         if not moves: moves.add((len(board)//2 + random.randint(-1, 1), len(board)//2 + random.randint(-1, 1)))
         return list(moves)
+
+    def undo_move(self, x, y):
+        self.board[x][y] = '.'
+        self.current_player = 'O' if self.current_player == 'X' else 'X'
+
+    def test_move(self, x, y):
+        self.board[x][y] = self.current_player
+        self.current_player = 'O' if self.current_player == 'X' else 'X'
